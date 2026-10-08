@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Career Mode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="career-container">
+
+    <!-- LEFT: STATS AND SCORELINES -->
+    <div class="left-panel">
+
+        
+        <h2 style="font-size: 35px;">Your Team Stats</h2>
+
+        <div class="stats-row" style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
+
+            <div class="stats-left" style="flex: 1;">
+                <p><strong>Attack:</strong> {{ attack }}</p>
+                <p><strong>Defense:</strong> {{ defense }}</p>
+                <p><strong>Top Scorer:</strong> <span style="color: #e74c3c; font-weight: bold;">{{top_scorer_text}}</span></p>
+            </div>
+
+            <div class="stats-right" style="flex: 1; text-align: right;">
+                <p>Wins: {{ wins }}</p>
+                <p>Draws: {{ draws }}</p>
+                <p>Losses: {{ losses }}</p>
+            </div>
+  
+        </div>
+
+        <hr>
+
+        <h2 style="margin-top: 30px; margin-bottom: 30px;">Matchweek {{ current_week }}</h2>
+
+        <hr>
+
+        <div class="fixtures">
+
+        {% if user_match[0] == "Season Over" %}
+            <div class="championship-banner" style="text-align: center; padding: 20px; background-color: #f1c40f; color: #2c3e50; border-radius: 8px; margin-top: 35px;">
+                <span style="font-size: 24px; font-weight: bold;">🏆 Season Over 🏆</span>
+                <br>
+                <span style="font-size: 18px; font-weight: 500; margin-top: 10px; display: inline-block;">
+                    {{ league_table[0]["team"] }} is the Champion!
+                </span>
+            </div>
+        {% else %}
+        {% endif %}
+
+        <h3 style="margin-top: 35px;">Your Match:</h3>
+
+        {% if last_match %}
+            <div class="match-centerpiece" style="text-align: center; margin-bottom: 20px; margin-top: 30px;">
+                <div class="match-score" style="font-size: 24px; font-weight: bold;">
+                    <!-- Home Team Highlight Check -->
+                    {% if last_match.home == session.team_name %}
+                        <span style="color: #3498db; text-shadow: 0 0 5px rgba(52,152,219,0.3);">
+                    {% endif %}
+                        {{ last_match.home }}
+                    </span> 
+                    
+                    {{ last_match.home_goals }} - {{ last_match.away_goals }} 
+                    
+                    <!-- Away Team Highlight Check -->
+                    {% if last_match.away == session.team_name %}
+                        <span style="color: #3498db; text-shadow: 0 0 5px rgba(52,152,219,0.3);">
+                    {% endif %}
+                        {{ last_match.away }}
+                    </span>
+                </div>
+                
+                <div class="match-details" style="display: flex; justify-content: space-around; margin-top: 20px; font-size: 14px; color: #777;">
+                    <div class="home-scorers">
+                        {% for scorer in last_match.home_scorers %}
+                            ⚽ {{ scorer }}<br>
+                        {% endfor %}
+                    </div>
+                    
+                    <div></div>
+                    
+                    <div class="away-scorers">
+                        {% for scorer in last_match.away_scorers %}
+                            ⚽ {{ scorer }}<br>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="text-align: center; margin-bottom: 20px; margin-top: 30px;">No match played yet</div>
+        {% endif %}
+
+        </div>
+        
+        {% if current_week >= len_schedule %}
+            <button class="next-btn" onclick="window.location.href='/transfer-market';">
+                Go Back to Transfer Market
+            </button>
+        {% else %}
+            <form action="/next-week" method="POST">
+                <button class="next-btn">Next Game: {{ user_match[0] }} vs {{ user_match[1] }}</button>
+            </form>
+        {% endif %}
+
+
+    </div>
+
+    <!-- RIGHT: LEAGUE TABLE -->
+    <div class="right-panel">
+
+        <h2 style="font-size: 35px;">League Table</h2>
+
+        <table>
+
+            <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>P</th>  <th>W</th>  <th>D</th>  <th>L</th> <th>GD</th> <th>Points</th> </tr>
+            </tr>
+
+            {% for team in league_table %}
+
+            <tr class="{% if team.team == session.team_name %}user-team-row{% endif %}">
+
+                <td>{{ loop.index }}</td>
+                <td>{{ team["team"] }}</td>
+                <td>{{ team["played"] }}</td>
+                <td>{{ team["wins"] }}</td>
+                <td>{{ team["draws"] }}</td>
+                <td>{{ team["losses"] }}</td>
+                <td>{{ team["gd"] }}</td>
+                <td>{{ team["points"] }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>
