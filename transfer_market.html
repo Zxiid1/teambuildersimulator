@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Transfer Market</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="main-layout">
+
+    <!-- LEFT: Transfer Market -->
+    <div class="market">
+
+        <h1>Transfer Market</h1>
+
+    <div class="filter-container" style="margin-bottom: 20px; display: flex; gap: 20px; align-items: center;">
+        <form method="GET" action="/transfer-market" id="filterForm" style="display: flex; gap: 15px;">
+            
+            <div>
+                <label for="position" style="font-weight: bold; margin-right: 5px;">Position:</label>
+                <select name="position" id="position" onchange="document.getElementById('filterForm').submit();" style="padding: 5px 10px; border-radius: 4px;">
+                    <option value="All" {% if selected_position == 'All' %}selected{% endif %}>-- All Players --</option>
+                    <option value="ST" {% if selected_position == 'ST' %}selected{% endif %}>ST (Striker)</option>
+                    <option value="LW" {% if selected_position == 'LW' %}selected{% endif %}>LW (Left Wing)</option>
+                    <option value="RW" {% if selected_position == 'RW' %}selected{% endif %}>RW (Right Wing)</option>
+                    <option value="AM" {% if selected_position == 'AM' %}selected{% endif %}>AM (Attacking Mid)</option>
+                    <option value="CM" {% if selected_position == 'CM' %}selected{% endif %}>CM (Central Mid)</option>
+                    <option value="LB" {% if selected_position == 'LB' %}selected{% endif %}>LB (Left Back)</option>
+                    <option value="CB" {% if selected_position == 'CB' %}selected{% endif %}>CB (Center Back)</option>
+                    <option value="RB" {% if selected_position == 'RB' %}selected{% endif %}>RB (Right Back)</option>
+                    <option value="GK" {% if selected_position == 'GK' %}selected{% endif %}>GK (Goalkeeper)</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="sort" style="font-weight: bold; margin-right: 5px;">Sort Rating:</label>
+                <select name="sort" id="sort" onchange="document.getElementById('filterForm').submit();" style="padding: 5px 10px; border-radius: 4px;">
+                    <option value="high_low" {% if selected_sort == 'high_low' %}selected{% endif %}>Highest to Lowest</option>
+                    <option value="low_high" {% if selected_sort == 'low_high' %}selected{% endif %}>Lowest to Highest</option>
+                </select>
+            </div>
+
+        </form>
+    </div>
+
+        <div class="player-grid">
+            {% for player in players %}
+            <div class="player-card">
+
+                <h3>
+                    {{ player["name"] }}
+                    <img class="flag"
+                        src="{{ url_for('static', filename='flags/' + player['nation'] + '.png') }}"
+                        alt="{{ player['nation'] }} flag">
+                </h3>
+
+                <p><strong>Rating:</strong> {{ player["rating"] }}</p>
+                <p><strong>Positions:</strong> {{ player["positions"] | join(", ") }}</p>
+
+                {% if player["name"] in squad_players %}
+
+                <form action="/sell/{{ player['name'] }}?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                    <button class="sell-btn">
+                        SELL
+                    </button>
+                </form>
+
+                {% else %}
+
+                <form action="/buy/{{ player['name'] }}?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                    <button class="buy-btn"
+                        {% if get_price(player["rating"]) > budget %}disabled{% endif %}>
+                        BUY ${{ get_price(player["rating"]) }}M
+                    </button>
+                </form>
+
+                {% endif %}
+
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <!-- RIGHT: Formation -->
+    <div class="formation">
+        {% set selected = session.get('selected_player') or {} %}
+        {% set selected_positions = selected.get('positions', []) %}
+
+        <h1>Your Squad (4-2-3-1)</h1>
+        <h2>Budget: ${{ budget }} Million</h2>
+
+        {% if team_complete %}
+            <form action="/start-career" method="POST" class="career-form">
+                <button class="career-btn">
+                    Start Career
+                </button>
+            </form>
+        {% endif %}
+
+        <div class="pitch">
+
+            <div class="row">
+                <div class="slot {% if not selected or 'ST' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/ST?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('ST') %}
+                                {{ session['squad']['ST']['name'] }}
+                            {% else %}
+                                ST
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="slot {% if not selected or 'LW' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/LW?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('LW') %}
+                                {{ session['squad']['LW']['name'] }}
+                            {% else %}
+                                LW
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="slot {% if not selected or 'AM' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/AM?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('AM') %}
+                                {{ session['squad']['AM']['name'] }}
+                            {% else %}
+                                AM
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="slot {% if not selected or 'RW' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/RW?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('RW') %}
+                                {{ session['squad']['RW']['name'] }}
+                            {% else %}
+                                RW
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="slot {% if not selected or 'CM' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/CM1?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('CM1') %}
+                                {{ session['squad']['CM1']['name'] }}
+                            {% else %}
+                                CM
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="slot {% if not selected or 'CM' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/CM2?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('CM2') %}
+                                {{ session['squad']['CM2']['name'] }}
+                            {% else %}
+                                CM
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="slot {% if not selected or 'LB' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/LB?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('LB') %}
+                                {{ session['squad']['LB']['name'] }}
+                            {% else %}
+                                LB
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="slot {% if not selected or 'CB' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/CB1?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('CB1') %}
+                                {{ session['squad']['CB1']['name'] }}
+                            {% else %}
+                                CB
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="slot {% if not selected or 'CB' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/CB2?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('CB2') %}
+                                {{ session['squad']['CB2']['name'] }}
+                            {% else %}
+                                CB
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="slot {% if not selected or 'RB' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/RB?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('RB') %}
+                                {{ session['squad']['RB']['name'] }}
+                            {% else %}
+                                RB
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="slot {% if not selected or 'GK' not in selected_positions %}disabled{% endif %}">
+                    <form action="/assign/GK?position={{ selected_position }}&sort={{ selected_sort }}" method="POST">
+                        <button type="submit" class="slot-button">
+                            {% if session['squad'].get('GK') %}
+                                {{ session['squad']['GK']['name'] }}
+                            {% else %}
+                                GK
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <form action="/clear-squad?position={{ selected_position }}&sort={{ selected_sort }}" method="POST" class="clear-form">
+                <button type="submit" class="clear-btn">
+                    Clear Squad
+                </button>
+            </form>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+</body>
+</html>
